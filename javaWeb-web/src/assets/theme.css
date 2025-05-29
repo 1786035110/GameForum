@@ -1,0 +1,278 @@
+/* 基础主题变量 */
+:root {
+  /* 浅色模式 */
+  --primary-color: #667eea;
+  --secondary-color: #764ba2;
+  --background-color: #ffffff;
+  --surface-color: #f8f9fa;
+  --text-color: #2c3e50;
+  --text-secondary: #6c757d;
+  --border-color: #e9ecef;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --gradient-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --hover-color: #f0f0f0;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+}
+
+/* 深色模式 */
+.dark-mode {
+  --primary-color: #667eea;
+  --secondary-color: #764ba2;
+  --background-color: #1a1a1a;
+  --surface-color: #2d2d2d;
+  --text-color: #e8e8e8;
+  --text-secondary: #b0b0b0;
+  --border-color: #404040;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --gradient-bg: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  --card-bg: rgba(45, 45, 45, 0.95);
+  --hover-color: #404040;
+  --success-color: #85ce61;
+  --warning-color: #ebb563;
+  --danger-color: #f78989;
+}
+
+/* 全局样式应用主题变量 */
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Element Plus 组件深色模式适配 */
+.dark-mode .el-card {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-card__header {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-input__wrapper {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-input__inner {
+  color: var(--text-color) !important;
+  background-color: transparent !important;
+}
+
+.dark-mode .el-textarea__inner {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-button {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-button:hover {
+  background-color: var(--hover-color) !important;
+}
+
+.dark-mode .el-menu {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-menu-item {
+  color: var(--text-color) !important;
+  background-color: transparent !important;
+}
+
+.dark-mode .el-menu-item:hover {
+  background-color: var(--hover-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-menu-item.is-active {
+  color: var(--primary-color) !important;
+}
+
+.dark-mode .el-sub-menu__title {
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-sub-menu .el-menu-item {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-table {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-table th {
+  background-color: var(--hover-color) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-table td {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-table tr:hover td {
+  background-color: var(--hover-color) !important;
+}
+
+.dark-mode .el-pagination {
+  background-color: var(--surface-color) !important;
+}
+
+.dark-mode .el-pagination button {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-pagination .el-pager li {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-pagination .el-pager li:hover {
+  background-color: var(--hover-color) !important;
+}
+
+.dark-mode .el-pagination .el-pager li.is-active {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.dark-mode .el-select .el-input__wrapper {
+  background-color: var(--surface-color) !important;
+}
+
+.dark-mode .el-select-dropdown {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-select-dropdown__item {
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-select-dropdown__item:hover {
+  background-color: var(--hover-color) !important;
+}
+
+.dark-mode .el-tabs__header {
+  background-color: var(--surface-color) !important;
+}
+
+.dark-mode .el-tabs__item {
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-tabs__item.is-active {
+  color: var(--primary-color) !important;
+}
+
+.dark-mode .el-tag {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-divider {
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .el-divider__text {
+  background-color: var(--background-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-alert {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-message {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+/* 修复深色模式下的表单标签和文本 */
+.dark-mode .el-form-item__label {
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-checkbox__label {
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-radio__label {
+  color: var(--text-color) !important;
+}
+
+/* 修复下拉选择框的文字颜色 */
+.dark-mode .el-select .el-input .el-input__inner {
+  color: var(--text-color) !important;
+}
+
+.dark-mode .el-option {
+  color: var(--text-color) !important;
+}
+
+/* 修复深色模式下的链接和按钮文字 */
+.dark-mode a {
+  color: var(--primary-color) !important;
+}
+
+.dark-mode .el-button--text {
+  color: var(--primary-color) !important;
+}
+
+/* 修复深色模式下的卡片内容 */
+.dark-mode .el-card__body {
+  color: var(--text-color) !important;
+}
+
+/* 修复深色模式下的标题 */
+.dark-mode h1, 
+.dark-mode h2, 
+.dark-mode h3, 
+.dark-mode h4, 
+.dark-mode h5, 
+.dark-mode h6 {
+  color: var(--text-color) !important;
+}
+
+/* 深色模式下的滚动条 */
+.dark-mode ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-mode ::-webkit-scrollbar-track {
+  background: var(--surface-color);
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
