@@ -6,6 +6,7 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import apiClient from '@/services/api'
+import socketService from '@/services/socket'
 import './assets/theme.css'
 
 const app = createApp(App)
@@ -16,7 +17,6 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 // 配置axios默认值
-// axios.defaults.baseURL = 'http://localhost:8080'
 app.config.globalProperties.$http = apiClient
 
 app.use(router)
@@ -28,20 +28,31 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const userInfo = JSON.parse(localStorage.getItem('user') || '{}')
   
-  if (token && userInfo.userId && !store.getters.isLoggedIn) {
+  // 修复属性名统一性问题
+  if (token && userInfo && (userInfo.userID || userInfo.userId) && !store.getters.isLoggedIn) {
     console.log('路由变化时同步用户状态')
-    store.commit('login', {
+    
+    // 确保使用正确的属性名
+    const userData = {
       token,
-      userId: userInfo.userId,
+      userID: userInfo.userID || userInfo.userId || userInfo.id,
       username: userInfo.username
-    })
+    }
+    
+    console.log('同步的用户数据:', userData)
+    store.commit('login', userData)
+    
+    // 用户登录后连接WebSocket
+    socketService.connect()
   } else if (!token && store.getters.isLoggedIn) {
     console.log('token不存在但Vuex中仍显示登录状态，同步为登出状态')
     store.commit('logout')
+    
+    // 用户登出后断开WebSocket
+    socketService.disconnect()
   }
   
   next()
 })
-
 
 app.mount('#app')

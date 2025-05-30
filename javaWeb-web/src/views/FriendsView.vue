@@ -1,107 +1,14 @@
-<script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useStore } from 'vuex'
-import { ElMessage, ElMessageBox } from 'element-plus'
-
-
-const store = useStore()
-const activeTab = ref('friends')
-const searchUsername = ref('')
-const sendingRequest = ref(false)
-
-const friends = computed(() => store.getters.getFriendsList)
-const friendRequests = computed(() => store.getters.getFriendRequests)
-const loading = computed(() => store.getters.isFriendsLoading)
-// 添加一个错误消息变量
-const errorMessage = ref('')
-
-
-onMounted(() => {
-  loadFriendData()
-})
-
-const loadFriendData = () => {
-  store.dispatch('fetchFriends')
-  store.dispatch('fetchFriendRequests')
-}
-
-const sendRequest = async () => {
-  if (!searchUsername.value.trim()) {
-    ElMessage.warning('请输入用户名')
-    return
-  }
-  
-  sendingRequest.value = true
-  try {
-    const result = await store.dispatch('sendFriendRequest', searchUsername.value)
-    
-    if (result.success) {
-      ElMessage.success(result.message)
-      searchUsername.value = ''
-      // 成功发送请求后刷新好友请求列表
-      store.dispatch('fetchFriendRequests')
-    } else {
-      // 显示具体的错误消息
-      ElMessage.error(result.message)
-    }
-  } catch (error) {
-    ElMessage.error('发送请求时出现错误')
-  } finally {
-    sendingRequest.value = false
-  }
-}
-
-const acceptRequest = async (requestId) => {
-  const result = await store.dispatch('acceptFriendRequest', requestId)
-  if (result.success) {
-    ElMessage.success(result.message)
-    // 刷新好友列表和请求列表
-    loadFriendData()
-  } else {
-    ElMessage.error(result.message)
-  }
-}
-
-const rejectRequest = async (requestId) => {
-  const success = await store.dispatch('rejectFriendRequest', requestId)
-  if (success) {
-    ElMessage.success('已拒绝好友请求')
-  }
-}
-
-const removeFriend = async (friend) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除好友 ${friend.username} 吗？`,
-      '删除好友',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    
-    const success = await store.dispatch('removeFriend', friend.id)
-    if (success) {
-      ElMessage.success('好友已删除')
-    }
-  } catch (e) {
-    // 用户取消操作
-  }
-}
-</script>
-
 <template>
-  <div v-if="errorMessage" class="error-message">
-    <el-alert
-      :title="errorMessage"
-      type="error"
-      show-icon
-      @close="errorMessage = ''"
-    />
-  </div>
-
   <div class="friends-container">
+    <div v-if="errorMessage" class="error-message">
+      <el-alert
+        :title="errorMessage"
+        type="error"
+        show-icon
+        @close="errorMessage = ''"
+      />
+    </div>
+
     <el-card>
       <template #header>
         <div class="card-header">
@@ -139,11 +46,18 @@ const removeFriend = async (friend) => {
             
             <el-table v-else :data="friends" style="width: 100%">
               <el-table-column label="用户名" prop="username"></el-table-column>
+              <el-table-column label="状态" width="100">
+                <template #default="scope">
+                  <el-tag :type="isUserOnline(scope.row.userId) ? 'success' : 'info'" size="small">
+                    {{ isUserOnline(scope.row.userId) ? '在线' : '离线' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
               <el-table-column label="操作" width="200">
                 <template #default="scope">
-                  <!-- <el-button type="primary" size="small" plain @click="$router.push(`/chat/${scope.row.id}`)">
+                  <el-button type="primary" size="small" plain @click="startChat(scope.row)">
                     发消息
-                  </el-button> -->
+                  </el-button>
                   <el-button type="danger" size="small" plain @click="removeFriend(scope.row)">
                     删除
                   </el-button>
@@ -176,6 +90,124 @@ const removeFriend = async (friend) => {
   </div>
 </template>
 
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
+const store = useStore()
+const router = useRouter()
+const activeTab = ref('friends')
+const searchUsername = ref('')
+const sendingRequest = ref(false)
+const errorMessage = ref('')
+const loading = ref(false)
+
+// 修正计算属性
+const friends = computed(() => store.getters['friends/getFriendsList'])
+const friendRequests = computed(() => store.getters['friends/getFriendRequests'])
+const onlineUsers = computed(() => store.state.chat.onlineUsers)
+
+onMounted(() => {
+  loadFriendData()
+})
+
+const loadFriendData = async () => {
+  loading.value = true
+  try {
+    await store.dispatch('friends/loadFriends')
+    await store.dispatch('friends/loadFriendRequests')
+  } catch (error) {
+    console.error('加载好友数据失败:', error)
+    errorMessage.value = '加载好友数据失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+const isUserOnline = (userId) => {
+  return onlineUsers.value.some(user => user.userId === userId)
+}
+
+const startChat = (friend) => {
+  // 跳转到聊天页面并选择该好友
+  router.push({
+    name: 'chat',
+    query: { userId: friend.userId }
+  })
+}
+
+const sendRequest = async () => {
+  if (!searchUsername.value.trim()) {
+    ElMessage.warning('请输入用户名')
+    return
+  }
+  
+  sendingRequest.value = true
+  try {
+    await store.dispatch('friends/sendFriendRequest', searchUsername.value)
+    ElMessage.success('好友请求已发送')
+    searchUsername.value = ''
+    // 刷新好友请求列表
+    await store.dispatch('friends/loadFriendRequests')
+  } catch (error) {
+    ElMessage.error('发送好友请求失败')
+    console.error('发送好友请求失败:', error)
+  } finally {
+    sendingRequest.value = false
+  }
+}
+
+const acceptRequest = async (requestId) => {
+  try {
+    await store.dispatch('friends/acceptFriendRequest', requestId)
+    ElMessage.success('已接受好友请求')
+    // 刷新数据
+    loadFriendData()
+  } catch (error) {
+    ElMessage.error('接受好友请求失败')
+    console.error('接受好友请求失败:', error)
+  }
+}
+
+const rejectRequest = async (requestId) => {
+  try {
+    await store.dispatch('friends/rejectFriendRequest', requestId)
+    ElMessage.success('已拒绝好友请求')
+    // 刷新数据
+    await store.dispatch('friends/loadFriendRequests')
+  } catch (error) {
+    ElMessage.error('拒绝好友请求失败')
+    console.error('拒绝好友请求失败:', error)
+  }
+}
+
+const removeFriend = async (friend) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除好友 ${friend.username} 吗？`,
+      '删除好友',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    await store.dispatch('friends/deleteFriend', friend.userId)
+    ElMessage.success('好友已删除')
+    // 刷新好友列表
+    await store.dispatch('friends/loadFriends')
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error('删除好友失败:', e)
+      ElMessage.error('删除好友失败')
+    }
+  }
+}
+</script>
+
 <style scoped>
 .error-message {
   margin-bottom: 16px;
@@ -185,12 +217,35 @@ const removeFriend = async (friend) => {
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
+  background: var(--gradient-bg);
+  min-height: 100vh;
+  transition: background 0.3s ease;
+}
+
+.friends-container .el-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px var(--shadow-color);
+  border: none;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-header h2 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 24px;
+  font-weight: 600;
+  background: linear-gradient(45deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .friends-search {
@@ -204,11 +259,14 @@ const removeFriend = async (friend) => {
 .empty-list {
   text-align: center;
   padding: 40px 0;
-  color: #909399;
+  color: var(--text-secondary);
+  font-size: 16px;
 }
 
 .request-card {
   margin-bottom: 16px;
+  background: var(--background-color);
+  border-radius: 8px;
 }
 
 .request-info {
@@ -219,10 +277,11 @@ const removeFriend = async (friend) => {
 
 .request-username {
   font-weight: bold;
+  color: var(--text-color);
 }
 
 .request-time {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 0.9em;
 }
 
@@ -230,5 +289,25 @@ const removeFriend = async (friend) => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* 表格美化 */
+.el-table {
+  background: var(--background-color);
+  color: var(--text-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.el-table :deep(.el-table__header-wrapper) {
+  background: var(--surface-color);
+}
+
+.el-table :deep(.el-table__row) {
+  background: var(--background-color);
+}
+
+.el-table :deep(.el-table__row:hover) {
+  background: var(--hover-color);
 }
 </style>

@@ -1,83 +1,3 @@
-<script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import { computed, onMounted, watch } from 'vue'
-import { useStore } from 'vuex'
-import { useRouter } from 'vue-router'
-import apiClient from '@/services/api'
-
-const store = useStore()
-const router = useRouter()
-
-// 更强的登录状态检测 - 双重保险
-const isLoggedIn = computed(() => {
-  const fromStore = store.getters.isLoggedIn
-  const fromLocal = localStorage.getItem('token') !== null
-  console.log('登录状态检测:', { fromStore, fromLocal })
-  return fromStore || fromLocal
-})
-
-// 获取当前用户信息
-const currentUser = computed(() => {
-  return store.getters.currentUser || {}
-})
-
-const darkMode = computed(() => store.state.theme.darkMode)
-
-watch(() => isLoggedIn.value, (newVal) => {
-  console.log('导航栏登录状态变化:', newVal)
-})
-
-onMounted(() => {
-  // 初始化主题
-  store.dispatch('initializeTheme')
-  
-  // 初始化用户状态并强制更新Vuex
-  const token = localStorage.getItem('token')
-  const userInfo = JSON.parse(localStorage.getItem('user') || '{}')
-  
-  if (token && userInfo && userInfo.userId) {
-    console.log('初始化用户状态:', userInfo)
-    store.commit('login', {
-      token,
-      userId: userInfo.userId,
-      username: userInfo.username
-    })
-  } else {
-    console.log('无用户状态')
-  }
-})
-
-const toggleDarkMode = () => {
-  store.commit('toggleDarkMode')
-}
-
-const handleLogout = async () => {
-  console.log('执行登出操作')
-  try {
-    // 先发送登出请求到后端
-    await apiClient.post('/user/logout')
-    console.log('成功调用登出接口')
-  } catch (error) {
-    console.error('登出接口调用失败:', error)
-    // 即使后端请求失败，仍继续前端登出流程
-  } finally {
-    // 无论接口调用成功与否，都清除前端登录状态
-    store.dispatch('logoutUser')
-    
-    // 添加额外确认，确保状态更新生效
-    setTimeout(() => {
-      if (localStorage.getItem('token')) {
-        console.log('强制清除token')
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-      }
-      // 导航到首页
-      router.push('/')
-    }, 100)
-  }
-}
-</script>
-
 <template>
   <header>
     <div class="wrapper">
@@ -87,6 +7,9 @@ const handleLogout = async () => {
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item index="/leaderboard">排行榜</el-menu-item>
           <el-menu-item index="/forum">社区</el-menu-item>
+          <!-- 聊天模块 -->
+          <el-menu-item index="/chat" @click="handleChatClick">聊天</el-menu-item>
+
         </el-menu>
         
         <!-- 右侧用户区域 -->
@@ -103,7 +26,7 @@ const handleLogout = async () => {
             </el-button>
           </div>
           
-          <!-- 用户信息显示区域 - 独立显示在外面 -->
+          <!-- 用户信息显示区域 -->
           <div v-if="isLoggedIn" class="user-info">
             <el-icon class="user-icon"><User /></el-icon>
             <span class="username">{{ currentUser.username || '用户' }}</span>
@@ -115,7 +38,7 @@ const handleLogout = async () => {
             <el-button type="primary" @click="router.push('/register')">注册</el-button>
           </div>
           
-          <!-- 个人中心下拉菜单 - 只在登录时显示 -->
+          <!-- 个人中心下拉菜单 -->
           <el-dropdown v-if="isLoggedIn" class="user-dropdown">
             <el-button circle class="dropdown-trigger">
               <el-icon><Setting /></el-icon>
@@ -129,6 +52,11 @@ const handleLogout = async () => {
                 <el-dropdown-item @click="router.push('/friends')">
                   <el-icon><UserFilled /></el-icon>
                   好友列表
+                </el-dropdown-item>
+                <el-dropdown-item @click="handleChatClick">
+                  <el-icon><ChatDotRound /></el-icon>
+                  聊天
+                  <el-badge :value="totalUnreadCount" :hidden="totalUnreadCount === 0" />
                 </el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">
                   <el-icon><SwitchButton /></el-icon>
@@ -144,6 +72,118 @@ const handleLogout = async () => {
 
   <RouterView />
 </template>
+
+<script setup>
+import { RouterLink, RouterView } from 'vue-router'
+import { computed, onMounted, watch } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+import apiClient from '@/services/api'
+import socketService from '@/services/socket'
+
+const store = useStore()
+const router = useRouter()
+
+// 计算属性
+const isLoggedIn = computed(() => {
+  const fromStore = store.getters.isLoggedIn
+  const fromLocal = localStorage.getItem('token') !== null
+  return fromStore || fromLocal
+})
+
+const currentUser = computed(() => {
+  return store.getters.currentUser || {}
+})
+
+const darkMode = computed(() => store.state.theme.darkMode)
+
+// 临时移除未读消息计数，因为之前说不要在导航栏显示
+const totalUnreadCount = computed(() => 0)
+
+// 方法
+const toggleDarkMode = () => {
+  store.commit('toggleDarkMode')
+}
+
+const handleChatClick = (event) => {
+  // 阻止默认的路由跳转
+  if (event && event.preventDefault) {
+    event.preventDefault()
+  }
+  
+  // 检查用户是否已登录
+  if (!isLoggedIn.value) {
+    // 未登录，跳转到登录页面
+    router.push('/login')
+  } else {
+    // 已登录，正常跳转到聊天页面
+    router.push('/chat')
+  }
+}
+
+const handleLogout = async () => {
+  try {
+    await apiClient.post('/user/logout')
+  } catch (error) {
+    console.error('登出接口调用失败:', error)
+  } finally {
+    // 断开WebSocket连接
+    socketService.disconnect()
+    
+    store.dispatch('logoutUser')
+    
+    setTimeout(() => {
+      if (localStorage.getItem('token')) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+      }
+      router.push('/')
+    }, 100)
+  }
+}
+
+// 生命周期
+onMounted(() => {
+  store.dispatch('initializeTheme')
+  
+  const token = localStorage.getItem('token')
+  const userInfo = JSON.parse(localStorage.getItem('user') || '{}')
+  
+  console.log('App.vue 初始化时的用户信息:', userInfo)
+  
+  // 修复这里的属性名检查和数据结构
+  if (token && userInfo && (userInfo.userID || userInfo.userId || userInfo.username)) {
+    const userData = {
+      token,
+      userID: userInfo.userID || userInfo.userId || userInfo.id,
+      username: userInfo.username
+    }
+    
+    console.log('App.vue 准备提交的用户数据:', userData)
+    
+    // 如果 userID 仍然缺失，但有用户名，可能需要重新登录
+    if (!userData.userID && userData.username) {
+      console.warn('用户信息不完整，缺少userID，建议重新登录')
+      // 这里可以选择清理数据或尝试修复
+      // 暂时使用 username 作为临时标识，但这不是理想的解决方案
+    }
+    
+    store.commit('login', userData)
+    
+    // 连接WebSocket
+    socketService.connect()
+  }
+})
+
+// 监听登录状态变化
+watch(isLoggedIn, (newVal) => {
+  if (newVal && !socketService.connected) {
+    socketService.connect()
+  } else if (!newVal && socketService.connected) {
+    socketService.disconnect()
+  }
+})
+</script>
 
 <style>
 @import './assets/theme.css';
@@ -192,7 +232,6 @@ header {
 .theme-toggle-container {
   display: flex;
   align-items: center;
-  margin-left: 10px;
 }
 
 .theme-toggle {
@@ -293,6 +332,10 @@ header {
 .el-dropdown-menu__item:hover {
   background: var(--hover-color) !important;
   color: var(--primary-color) !important;
+}
+
+.chat-badge {
+  margin-left: 4px;
 }
 
 /* 响应式设计 */

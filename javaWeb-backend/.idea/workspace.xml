@@ -4,7 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bf0f545c-c41d-4e8a-ac4e-c1a70f3f843f" name="更改" comment="" />
+    <list default="true" id="bf0f545c-c41d-4e8a-ac4e-c1a70f3f843f" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/web-pojo/src/main/java/com/DDT/javaWeb/entity/ChatMessage.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-pojo/src/main/java/com/DDT/javaWeb/vo/ChatMessageVO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/config/WebSocketConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/controller/ChatController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/controller/TestController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/handler/ChatWebSocketHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/interceptor/WebSocketAuthInterceptor.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/mapper/ChatMessageMapper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/service/IChatService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/service/impl/ChatServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web-server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/web-server/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/config/MybatisConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/config/MybatisConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/App.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/assets/theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/assets/theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/router/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/router/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/store/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/store/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/store/modules/friends.js" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/store/modules/friends.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/store/modules/user.js" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/store/modules/user.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../javaWeb-web/src/views/FriendsView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../javaWeb-web/src/views/FriendsView.vue" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,8 +42,24 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/web-server/src/main/java/com/DDT/javaWeb/service/impl/UserServiceImpl.java" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="userSettingsFile" value="C:\Users\17860\.m2\wrapper\dists\apache-maven-3.6.3-bin\1iopthnavndlasol9gbrbg6bf2\apache-maven-3.6.3\conf\settings.xml" />
+      </MavenGeneralSettings>
+    </option>
+    <option name="importingSettings">
+      <MavenImportingSettings>
+        <option name="useMavenOutput" value="false" />
+        <option name="workspaceImportForciblyTurnedOn" value="true" />
+      </MavenImportingSettings>
+    </option>
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="ProjectErrors" />
@@ -28,6 +68,9 @@
   &quot;associatedIndex&quot;: 0
 }</component>
   <component name="ProjectId" id="2xMWqaWzDwt6Lrwi7tm42RldFO3" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -36,12 +79,15 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Maven.JavaWeb [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.JavaWeb [org.apache.maven.plugins:maven-clean-plugin:3.2.0:clean].executor&quot;: &quot;Run&quot;,
     &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
     &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
     &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
     &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;Spring Boot.javaWebApplication.executor&quot;: &quot;Debug&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;jdk.selected.JAVA_MODULE&quot;: &quot;17&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;G:/work/JavaWeb/javaWeb-backend&quot;,
@@ -110,10 +156,19 @@
       <workItem from="1748229093026" duration="22323000" />
       <workItem from="1748318829464" duration="20948000" />
       <workItem from="1748422611751" duration="4545000" />
+      <workItem from="1748496294516" duration="628000" />
+      <workItem from="1748497165454" duration="216000" />
+      <workItem from="1748530721910" duration="2628000" />
+      <workItem from="1748533862719" duration="2567000" />
+      <workItem from="1748576656934" duration="5699000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>

@@ -1,15 +1,12 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useStore } from 'vuex'
 import apiClient from '@/services/api'
 import { ElMessage, ElTabs, ElTabPane } from 'element-plus'
 import { watch } from 'vue'
 import { formatDate } from '@/utils/dateFormat';
 
 const router = useRouter()
-const route = useRoute()
-const store = useStore()
 
 const activeTab = ref('all')
 const categories = ref([])
