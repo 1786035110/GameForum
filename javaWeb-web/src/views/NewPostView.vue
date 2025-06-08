@@ -76,24 +76,24 @@ const submitPost = async (formEl) => {
         
         const response = await apiClient.post('/forum/posts', postForm.value)
         
-        // 打印响应以便调试
         console.log('发布帖子响应:', response.data)
         
-        // 使用正确的响应数据结构
         if (response.data && response.data.code === 1) {
           ElMessage.success('帖子发布成功')
           const postId = response.data.data.id
           
           if (postId) {
+            console.log('跳转到新发布的帖子，ID:', postId)
             router.push(`/forum/post/${postId}`)
           } else {
             console.error('无法获取新发布帖子的ID')
-            router.push('/forum') // 作为后备，跳转到论坛页面
+            router.push('/forum')
           }
         } else {
           ElMessage.error(response.data?.msg || '发布失败')
         }
       } catch (error) {
+        console.error('发布帖子失败:', error)
         ElMessage.error('发布失败: ' + (error.response?.data?.message || error.message))
       } finally {
         submitting.value = false

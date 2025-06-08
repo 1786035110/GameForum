@@ -34,9 +34,10 @@ const router = createRouter({
       component: ForumView
     },
     {
-      path: '/post/:id',
+      path: '/forum/post/:id',
       name: 'postDetail',
-      component: PostDetailView
+      component: PostDetailView,
+      props: true 
     },
     {
       path: '/new-post',
@@ -66,6 +67,12 @@ const router = createRouter({
       name: 'chat',
       component: ChatView
     },
+    // 添加通配符路由处理404情况
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'notFound',
+      redirect: '/'
+    }
   ]
 })
 

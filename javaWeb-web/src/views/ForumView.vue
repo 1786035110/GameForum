@@ -20,7 +20,6 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
-
 onMounted(async () => {
   await Promise.all([
     fetchCategories(),
@@ -131,7 +130,6 @@ const fetchFriendPosts = async () => {
   }
 }
 
-
 // 处理页码变化
 const handleCurrentChange = (page) => {
   currentPage.value = page
@@ -169,33 +167,37 @@ const changeCategory = (categoryId) => { // 修改changeCategory函数
   fetchPosts(categoryId)
 }
 
-
 const goToPostDetail = (postId) => {
-  // 检查用户是否已登录
-  if (isLoggedIn.value) {
-    router.push(`/forum/post/${postId}`)
-  } else {
-    // 保存用户想要访问的帖子ID
-    localStorage.setItem('redirectPostId', postId)
+  // 修改：检查登录状态，未登录时阻止跳转并提示
+  if (!isLoggedIn.value) {
     ElMessage({
-      message: '登录后才能查看帖子详情',
+      message: '请先登录后才能查看帖子详情',
       type: 'warning',
       duration: 3000,
-      showClose: true,
-      onClose: () => {
-        router.push('/login')
-      }
+      showClose: true
     })
+    return
   }
+  
+  console.log('跳转到帖子详情，ID:', postId)
+  router.push(`/forum/post/${postId}`)
 }
 
 const goToNewPost = () => {
-  router.push('/forum/new-post')
+  const token = localStorage.getItem('token')
+    
+  if (!token) {
+    ElMessage.warning('请先登录以发布帖子')
+    return
+  }
+
+  router.push('/new-post')
 }
 
 const goToLogin = () => {
   router.push('/login')
 }
+
 // 检查用户是否已登录
 const isLoggedIn = computed(() => {
   return localStorage.getItem('token') !== null
@@ -218,18 +220,7 @@ const getCategoryName = (categoryId) => {
         </div>
       </template>
 
-    
       <el-tabs v-model="activeTab" @tab-click="changeTab">
-        
-        <!-- 在没有帖子时显示特定分类的提示 -->
-        <div v-if="posts.length === 0" class="empty-posts">
-          <template v-if="currentCategory">
-            暂无「{{ getCategoryName(currentCategory) }}」分类下的帖子，快来发布第一个帖子吧！
-          </template>
-          <template v-else>
-            暂无帖子，快来发布第一个帖子吧！
-          </template>
-        </div>
         <el-tab-pane label="全部帖子" name="all">
           <div class="forum-content" v-loading="loading">
             
@@ -239,10 +230,10 @@ const getCategoryName = (categoryId) => {
                 @select="changeCategory"
                 class="category-menu"
               >
-              <div class="category-header">
-              <h3>分类</h3>
-                <p class="category-tip">点击分类查看相关帖子</p>
-              </div>
+                <div class="category-header">
+                  <h3>分类</h3>
+                  <p class="category-tip">点击分类查看相关帖子</p>
+                </div>
 
                 <el-menu-item index="">全部帖子</el-menu-item>
                 <el-menu-item 
@@ -256,16 +247,31 @@ const getCategoryName = (categoryId) => {
             </div>
             
             <div class="forum-posts">
-              <div v-if="posts.length === 0" class="empty-posts">
-                暂无帖子，快来发布第一个帖子吧！
+              <!-- 在没有帖子时显示特定分类的提示 -->
+              <div v-if="posts.length === 0 && !loading" class="empty-posts">
+                <template v-if="currentCategory">
+                  暂无「{{ getCategoryName(currentCategory) }}」分类下的帖子，快来发布第一个帖子吧！
+                </template>
+                <template v-else>
+                  暂无帖子，快来发布第一个帖子吧！
+                </template>
               </div>
               
               <el-card 
                 v-for="post in posts" 
                 :key="post.id" 
                 class="post-card"
+                :class="{ 'login-required-post': !isLoggedIn }"
                 @click="goToPostDetail(post.id)"
               >
+                <!-- 未登录状态提示遮罩 -->
+                <div v-if="!isLoggedIn" class="login-required-overlay">
+                  <div class="login-prompt">
+                    <el-icon><Lock /></el-icon>
+                    <span>登录后查看详情</span>
+                  </div>
+                </div>
+
                 <div class="post-header">
                   <h3 class="post-title">{{ post.title }}</h3>
                   <div class="post-category">
@@ -274,30 +280,29 @@ const getCategoryName = (categoryId) => {
                 </div>
                 
                 <div class="post-info">
-                  <span class="post-author">{{ post.authorName }}</span>
+                  <span class="post-author">作者: {{ post.authorName }}</span>
                   <span class="post-date">{{ formatDate(post.createTime) }}</span>
                 </div>
                 
                 <div class="post-summary">
-                  {{ post.summary }}
+                  {{ post.summary || post.content }}
                 </div>
                 
                 <div class="post-stats">
                   <span><el-icon><View /></el-icon> {{ post.viewCount }}</span>
-                  <span><el-icon><ChatDotRound /></el-icon> {{ post.commentCount }}</span>
-                  <span><el-icon><Star /></el-icon> {{ post.likeCount }}</span>
+                  <span><el-icon><ChatDotRound /></el-icon> {{ post.commentCount || 0 }}</span>
+                  <span><el-icon><Star /></el-icon> {{ post.likeCount || 0 }}</span>
                 </div>
               </el-card>
 
               <!-- 添加分页组件 -->
-              <div class="pagination-container">
+              <div class="pagination-container" v-if="total > 0">
                 <el-pagination
                   v-model:current-page="currentPage"
                   v-model:page-size="pageSize"
                   :page-sizes="[10, 20, 50, 100]"
-                  background
-                  layout="total, sizes, prev, pager, next, jumper"
                   :total="total"
+                  layout="total, sizes, prev, pager, next, jumper"
                   @size-change="handleSizeChange"
                   @current-change="handleCurrentChange"
                 />
@@ -309,17 +314,25 @@ const getCategoryName = (categoryId) => {
         <el-tab-pane label="好友动态" name="friends">
           <div class="friends-notice" v-if="!isLoggedIn">
             <el-alert
-              title="查看好友动态需要先登录"
-              type="warning"
-              description="请登录后查看您好友的最新帖子"
+              title="需要登录"
+              description="请先登录以查看好友的帖子动态"
+              type="info"
               show-icon
               :closable="false"
-            />
+            >
+              <template #default>
+                <div class="login-actions">
+                  <el-button type="primary" @click="goToLogin">
+                    立即登录
+                  </el-button>
+                </div>
+              </template>
+            </el-alert>
           </div>
           
           <div v-else v-loading="friendsLoading">
-            <div v-if="friendPosts.length === 0" class="empty-posts">
-              暂无好友帖子，去添加好友或鼓励好友发帖吧！
+            <div v-if="friendPosts.length === 0 && !friendsLoading" class="empty-posts">
+              暂无好友帖子，快去添加好友吧！
             </div>
             
             <el-card 
@@ -329,9 +342,9 @@ const getCategoryName = (categoryId) => {
               @click="goToPostDetail(post.id)"
             >
               <div class="friend-tag">
-                <el-tag type="success" effect="dark">好友</el-tag>
+                <el-tag type="success" size="small">好友</el-tag>
               </div>
-              
+
               <div class="post-header">
                 <h3 class="post-title">{{ post.title }}</h3>
                 <div class="post-category">
@@ -340,29 +353,29 @@ const getCategoryName = (categoryId) => {
               </div>
               
               <div class="post-info">
-                <span class="post-author friend-name">{{ post.authorName }}</span>
+                <span class="post-author friend-name">作者: {{ post.authorName }}</span>
                 <span class="post-date">{{ formatDate(post.createTime) }}</span>
               </div>
               
               <div class="post-summary">
-                {{ post.summary }}
+                {{ post.summary || post.content }}
               </div>
               
               <div class="post-stats">
                 <span><el-icon><View /></el-icon> {{ post.viewCount }}</span>
-                <span><el-icon><ChatDotRound /></el-icon> {{ post.commentCount }}</span>
-                <span><el-icon><Star /></el-icon> {{ post.likeCount }}</span>
+                <span><el-icon><ChatDotRound /></el-icon> {{ post.commentCount || 0 }}</span>
+                <span><el-icon><Star /></el-icon> {{ post.likeCount || 0 }}</span>
               </div>
             </el-card>
-            <!-- 添加分页组件 -->
-            <div class="pagination-container" v-if="friendPosts.length > 0">
+
+            <!-- 好友帖子分页 -->
+            <div class="pagination-container" v-if="total > 0">
               <el-pagination
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
                 :page-sizes="[10, 20, 50, 100]"
-                background
-                layout="total, sizes, prev, pager, next, jumper"
                 :total="total"
+                layout="total, sizes, prev, pager, next, jumper"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange"
               />
@@ -375,73 +388,6 @@ const getCategoryName = (categoryId) => {
 </template>
 
 <style scoped>
-.post-detail-container {
-  padding: 24px;
-  max-width: 1000px;
-  margin: 0 auto;
-  background: var(--gradient-bg);
-  min-height: 100vh;
-}
-
-.login-required-card {
-  border-radius: 16px;
-  box-shadow: 0 10px 30px var(--shadow-color);
-  border: none;
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-
-.login-required {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.login-icon {
-  color: var(--primary-color);
-  margin-bottom: 24px;
-  background: linear-gradient(45deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.login-required h2 {
-  font-size: 24px;
-  margin-bottom: 16px;
-  color: var(--text-color);
-}
-
-.login-required p {
-  font-size: 16px;
-  color: var(--text-secondary);
-  margin-bottom: 32px;
-}
-
-.login-actions {
-  display: flex;
-  gap: 16px;
-}
-
-/* 美化主按钮 */
-.login-actions .el-button--primary {
-  background: linear-gradient(45deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-weight: 500;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-  transition: all 0.3s ease;
-}
-
-.login-actions .el-button--primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-}
-
 .forum-container {
   padding: 24px;
   max-width: 1400px;
@@ -533,12 +479,12 @@ const getCategoryName = (categoryId) => {
 .forum-content {
   display: flex;
   gap: 20px;
-  justify-content: center; /* 添加居中对齐 */
+  justify-content: center;
   align-items: flex-start;
 }
 
 .forum-categories {
-  width: 200px; /* 减少分类菜单宽度 */
+  width: 200px;
   flex-shrink: 0;
 }
 
@@ -571,17 +517,22 @@ const getCategoryName = (categoryId) => {
 
 .forum-posts {
   flex-grow: 1;
-  max-width: 800px; /* 限制帖子区域最大宽度，使其更居中 */
-  margin: 0 auto; /* 在可用空间内居中 */
+  max-width: 800px;
+  margin: 0 auto;
 }
+
 .empty-posts {
-  background: var(--background-color);
+  text-align: center;
+  padding: 40px 20px;
   color: var(--text-secondary);
+  background: var(--background-color);
+  border-radius: 12px;
+  margin-bottom: 20px;
 }
 
 /* 帖子卡片美化 */
 .post-card {
-  margin-bottom: 30px; /* 从20px增加到30px */
+  margin-bottom: 30px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
@@ -611,17 +562,61 @@ const getCategoryName = (categoryId) => {
   background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
 }
 
+/* 未登录状态下的帖子卡片样式 */
+.login-required-post {
+  position: relative;
+  overflow: hidden;
+}
+
+.login-required-post:hover {
+  transform: none;
+  box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+.login-required-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.login-required-post:hover .login-required-overlay {
+  opacity: 1;
+}
+
+.login-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.login-prompt .el-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
 .post-summary {
   color: var(--text-secondary);
-  margin: 18px 0; /* 上下边距 */
-  padding: 0 24px; /* 添加左右内边距，与标题和作者信息对齐 */
-  line-height: 1.7; /* 行高 */
-  font-size: 15px; /* 设置适当的字体大小 */
-  text-align: justify; /* 两端对齐，使文本更整齐 */
+  margin: 18px 0;
+  padding: 0 24px;
+  line-height: 1.7;
+  font-size: 15px;
+  text-align: justify;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 限制最多显示两行 */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -658,6 +653,11 @@ const getCategoryName = (categoryId) => {
 
 .post-title {
   color: var(--text-color);
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  flex: 1;
+  margin-right: 16px;
 }
 
 .post-category .el-tag {
@@ -684,13 +684,6 @@ const getCategoryName = (categoryId) => {
   color: #67c23a;
   font-weight: 600;
 }
-
-.post-summary {
-  color: var(--text-secondary);
-  margin: 18px 0; /* 上下边距增加 */
-  line-height: 1.7; /* 增加行高，提高可读性 */
-}
-
 
 .post-stats {
   display: flex;
@@ -720,7 +713,19 @@ const getCategoryName = (categoryId) => {
 .friends-notice :deep(.el-alert) {
   border-radius: 12px;
   border: none;
-  box-shadow: 0 4px 15px rgba(230, 162, 60, 0.2);
+  box-shadow: 0 4px 15px rgba(64, 158, 255, 0.2);
+}
+
+.login-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.login-actions .el-button {
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-weight: 500;
 }
 
 /* 分页美化 */
@@ -761,67 +766,6 @@ const getCategoryName = (categoryId) => {
   color: white;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .forum-container {
-    padding: 16px;
-  }
-  
-  .forum-content {
-    flex-direction: column;
-    gap: 16px;
-    justify-content: stretch; /* 移动端拉伸布局 */
-  }
-  
-  .forum-categories {
-    width: 100%;
-  }
-  
-  .forum-posts {
-    max-width: none; /* 移动端取消最大宽度限制 */
-    margin: 0; /* 移动端取消margin */
-  }
-  
-  .category-menu {
-    display: flex;
-    overflow-x: auto;
-    border-radius: 12px;
-  }
-  
-  .category-menu :deep(.el-menu-item) {
-    white-space: nowrap;
-    margin: 4px;
-    min-width: 80px; /* 为移动端菜单项设置最小宽度 */
-  }
-  
-  .post-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .post-stats {
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-}
-
-/* 加载动画 */
-@keyframes shimmer {
-  0% {
-    background-position: -468px 0;
-  }
-  100% {
-    background-position: 468px 0;
-  }
-}
-
-.loading-shimmer {
-  animation: shimmer 1.5s ease-in-out infinite;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 1000px 100%;
-}
-
 .category-header {
   padding: 0 12px 12px;
 }
@@ -839,9 +783,40 @@ const getCategoryName = (categoryId) => {
   font-size: 12px;
 }
 
-/* 高亮当前选中的分类 */
-.current-category {
-  font-weight: bold;
-  color: var(--primary-color);
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .forum-container {
+    padding: 16px;
+  }
+  
+  .forum-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .forum-categories {
+    width: 100%;
+  }
+  
+  .forum-posts {
+    max-width: none;
+  }
+  
+  .category-menu {
+    overflow-x: auto;
+  }
+  
+  .category-menu :deep(.el-menu-item) {
+    white-space: nowrap;
+  }
+  
+  .post-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .post-stats {
+    gap: 16px;
+  }
 }
 </style>

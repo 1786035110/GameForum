@@ -1,3 +1,117 @@
+<script setup>
+import { RouterLink, RouterView } from 'vue-router'
+import { computed, onMounted, watch } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import apiClient from '@/services/api'
+import socketService from '@/services/socket'
+
+const store = useStore()
+const router = useRouter()
+
+// 计算属性
+const isLoggedIn = computed(() => {
+  const fromStore = store.getters.isLoggedIn
+  const fromLocal = localStorage.getItem('token') !== null
+  return fromStore || fromLocal
+})
+
+const currentUser = computed(() => {
+  return store.getters.currentUser || {}
+})
+
+const darkMode = computed(() => store.state.theme.darkMode)
+
+const totalUnreadCount = computed(() => 0) // 暂时设为0
+
+// 方法
+const toggleDarkMode = () => {
+  store.commit('toggleDarkMode')
+}
+
+const handleChatClick = (event) => {
+  // 阻止默认的路由跳转
+  if (event && event.preventDefault) {
+    event.preventDefault()
+  }
+  
+  // 检查用户是否已登录
+  if (!isLoggedIn.value) {
+    // 未登录，显示提示并跳转到登录页面
+    ElMessage({
+      message: '请先登录后才能使用聊天功能',
+      type: 'warning',
+      duration: 3000,
+      showClose: true
+    })
+    router.push('/login')
+  } else {
+    // 已登录，正常跳转到聊天页面
+    router.push('/chat')
+  }
+}
+
+const handleLogout = async () => {
+  try {
+    await apiClient.post('/user/logout')
+  } catch (error) {
+    console.error('登出接口调用失败:', error)
+  } finally {
+    // 断开WebSocket连接
+    socketService.disconnect()
+    
+    store.dispatch('logoutUser')
+    
+    setTimeout(() => {
+      if (localStorage.getItem('token')) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+      }
+      router.push('/')
+    }, 100)
+  }
+}
+
+onMounted(() => {
+  console.log('App.vue 初始化...')
+  
+  // 初始化主题
+  store.dispatch('initializeTheme')
+  
+  // 初始化用户状态
+  store.dispatch('checkAuthStatus')
+  
+  const token = localStorage.getItem('token')
+  const userInfo = JSON.parse(localStorage.getItem('user') || '{}')
+  
+  console.log('App.vue 初始化时的状态:', {
+    token: token ? 'exists' : 'null',
+    userInfo: userInfo,
+    vuexLoggedIn: store.getters.isLoggedIn
+  })
+  
+  // 如果有有效的登录信息，连接WebSocket
+  if (token && userInfo.username && store.getters.isLoggedIn) {
+    console.log('自动连接WebSocket')
+    try {
+      socketService.connect()
+    } catch (error) {
+      console.error('WebSocket自动连接失败:', error)
+    }
+  }
+})
+
+// 监听登录状态变化
+watch(isLoggedIn, (newVal) => {
+  if (newVal && !socketService.connected) {
+    socketService.connect()
+  } else if (!newVal && socketService.connected) {
+    socketService.disconnect()
+  }
+})
+</script>
+
 <template>
   <header>
     <div class="wrapper">
@@ -7,9 +121,11 @@
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item index="/leaderboard">排行榜</el-menu-item>
           <el-menu-item index="/forum">社区</el-menu-item>
-          <!-- 聊天模块 -->
-          <el-menu-item index="/chat" @click="handleChatClick">聊天</el-menu-item>
-
+          <!-- 聊天模块 - 添加点击处理 -->
+          <el-menu-item index="/chat" @click="handleChatClick">
+            聊天
+            <el-badge v-if="isLoggedIn" :value="totalUnreadCount" :hidden="totalUnreadCount === 0" class="chat-badge" />
+          </el-menu-item>
         </el-menu>
         
         <!-- 右侧用户区域 -->
@@ -73,118 +189,7 @@
   <RouterView />
 </template>
 
-<script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import { computed, onMounted, watch } from 'vue'
-import { useStore } from 'vuex'
-import { useRouter } from 'vue-router'
-import apiClient from '@/services/api'
-import socketService from '@/services/socket'
-
-const store = useStore()
-const router = useRouter()
-
-// 计算属性
-const isLoggedIn = computed(() => {
-  const fromStore = store.getters.isLoggedIn
-  const fromLocal = localStorage.getItem('token') !== null
-  return fromStore || fromLocal
-})
-
-const currentUser = computed(() => {
-  return store.getters.currentUser || {}
-})
-
-const darkMode = computed(() => store.state.theme.darkMode)
-
-// 临时移除未读消息计数，因为之前说不要在导航栏显示
-const totalUnreadCount = computed(() => 0)
-
-// 方法
-const toggleDarkMode = () => {
-  store.commit('toggleDarkMode')
-}
-
-const handleChatClick = (event) => {
-  // 阻止默认的路由跳转
-  if (event && event.preventDefault) {
-    event.preventDefault()
-  }
-  
-  // 检查用户是否已登录
-  if (!isLoggedIn.value) {
-    // 未登录，跳转到登录页面
-    router.push('/login')
-  } else {
-    // 已登录，正常跳转到聊天页面
-    router.push('/chat')
-  }
-}
-
-const handleLogout = async () => {
-  try {
-    await apiClient.post('/user/logout')
-  } catch (error) {
-    console.error('登出接口调用失败:', error)
-  } finally {
-    // 断开WebSocket连接
-    socketService.disconnect()
-    
-    store.dispatch('logoutUser')
-    
-    setTimeout(() => {
-      if (localStorage.getItem('token')) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-      }
-      router.push('/')
-    }, 100)
-  }
-}
-
-// 生命周期
-onMounted(() => {
-  store.dispatch('initializeTheme')
-  
-  const token = localStorage.getItem('token')
-  const userInfo = JSON.parse(localStorage.getItem('user') || '{}')
-  
-  console.log('App.vue 初始化时的用户信息:', userInfo)
-  
-  // 修复这里的属性名检查和数据结构
-  if (token && userInfo && (userInfo.userID || userInfo.userId || userInfo.username)) {
-    const userData = {
-      token,
-      userID: userInfo.userID || userInfo.userId || userInfo.id,
-      username: userInfo.username
-    }
-    
-    console.log('App.vue 准备提交的用户数据:', userData)
-    
-    // 如果 userID 仍然缺失，但有用户名，可能需要重新登录
-    if (!userData.userID && userData.username) {
-      console.warn('用户信息不完整，缺少userID，建议重新登录')
-      // 这里可以选择清理数据或尝试修复
-      // 暂时使用 username 作为临时标识，但这不是理想的解决方案
-    }
-    
-    store.commit('login', userData)
-    
-    // 连接WebSocket
-    socketService.connect()
-  }
-})
-
-// 监听登录状态变化
-watch(isLoggedIn, (newVal) => {
-  if (newVal && !socketService.connected) {
-    socketService.connect()
-  } else if (!newVal && socketService.connected) {
-    socketService.disconnect()
-  }
-})
-</script>
-
+<!-- 样式部分保持不变 -->
 <style>
 @import './assets/theme.css';
 

@@ -53,7 +53,6 @@ const submitForm = async (formEl) => {
         
         // 登录成功部分
         if (response.data.code === 1 || response.data.success === true) {
-          /// 登录成功
           const userData = response.data.data || response.data
           console.log('登录成功，用户数据:', userData)
           
@@ -65,16 +64,44 @@ const submitForm = async (formEl) => {
             console.error('登录响应中缺少token!')
           }
           
-          // 确保按顺序执行 - 先更新状态，再导航
-          store.commit('login', userData) // 直接使用mutation更可靠
+          // 保存用户信息
+          const userInfo = {
+            userID: userData.userID || userData.userId || userData.id,
+            username: userData.username,
+            email: userData.email,
+            avatar: userData.avatar
+          }
+          localStorage.setItem('user', JSON.stringify(userInfo))
+          
+          // 更新Vuex状态
+          store.commit('login', {
+            token: userData.token,
+            userInfo: userInfo
+          })
           
           ElMessage.success('登录成功')
-          router.push('/')
+          
+          // 检查是否有重定向路径
+          const redirectPath = sessionStorage.getItem('redirectPath')
+          if (redirectPath) {
+            sessionStorage.removeItem('redirectPath')
+            console.log('重定向到目标页面:', redirectPath)
+            router.push(redirectPath)
+          } else {
+            // 检查是否有保存的帖子重定向
+            const redirectPostId = localStorage.getItem('redirectPostId')
+            if (redirectPostId) {
+              localStorage.removeItem('redirectPostId')
+              router.push(`/forum/post/${redirectPostId}`)
+            } else {
+              router.push('/')
+            }
+          }
         } else {
-        // 业务逻辑错误
-        const errorMsg = response.data.msg || response.data.message || '登录失败'
-        ElMessage.error(errorMsg)
-      }
+          // 业务逻辑错误
+          const errorMsg = response.data.msg || response.data.message || '登录失败'
+          ElMessage.error(errorMsg)
+        }
       } catch (error) {
         console.error('登录请求出错:', error)
         let errorMsg = '登录失败'

@@ -86,27 +86,38 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     public Result deleteFriend(Long friendId) {
         // 1. 获取当前登录用户的ID
         Long userId = UserHolder.getUser().getUserID();
+        boolean success = false;
 
         // 2. 删除好友关系
         LambdaQueryWrapper<Follow> queryWrapper1 = new LambdaQueryWrapper<>();
         queryWrapper1.eq(Follow::getUserId, userId)
                 .eq(Follow::getFollowUserId, friendId);
         int count1 = this.baseMapper.delete(queryWrapper1);
+
         LambdaQueryWrapper<Follow> queryWrapper2 = new LambdaQueryWrapper<>();
         queryWrapper2.eq(Follow::getUserId, friendId)
                 .eq(Follow::getFollowUserId, userId);
         int count2 = this.baseMapper.delete(queryWrapper2);
-        if (count1 > 0 && count2 > 0) {
-            return Result.success(FRIEND_DELETE_SUCCESS);
+
+        // 只要有一方删除成功就算成功
+        if (count1 > 0 || count2 > 0) {
+            success = true;
         }
 
-        // 删除缓存中已删除的好友
-        String friendListKey = CACHE_FRIEND_LIST_KEY + userId;
-        Set<Object> friendIds = stringRedisTemplate.opsForHash().keys(friendListKey);
-        if (friendIds.contains(friendId.toString())) {
-            stringRedisTemplate.opsForHash().delete(friendListKey, friendId.toString());
+        // 3. 删除缓存中的好友记录
+        String userFriendListKey = CACHE_FRIEND_LIST_KEY + userId;
+        if (stringRedisTemplate.hasKey(userFriendListKey)) {
+            stringRedisTemplate.opsForHash().delete(userFriendListKey, friendId.toString());
+            log.info("删除用户{}缓存中的好友: {}", userId, friendId);
         }
 
-        return Result.error(FRIEND_DELETE_FAIL);
+        // 4. 删除好友的缓存中的当前用户
+        String friendListKey = CACHE_FRIEND_LIST_KEY + friendId;
+        if (stringRedisTemplate.hasKey(friendListKey)) {
+            stringRedisTemplate.opsForHash().delete(friendListKey, userId.toString());
+            log.info("删除好友{}缓存中的用户: {}", friendId, userId);
+        }
+
+        return success ? Result.success(FRIEND_DELETE_SUCCESS) : Result.error(FRIEND_DELETE_FAIL);
     }
 }

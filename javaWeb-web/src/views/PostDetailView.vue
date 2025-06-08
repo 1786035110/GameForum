@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import apiClient from '@/services/api'
 import { ElMessage } from 'element-plus'
-import { formatDate } from '@/utils/dateFormat';
+import { formatDate } from '@/utils/dateFormat'
 
 const route = useRoute()
+const router = useRouter()
 const postId = route.params.id
 const post = ref(null)
 const comments = ref([])
@@ -18,6 +19,7 @@ const commentForm = ref({
 const commentsLoading = ref(false)
 
 onMounted(async () => {
+  console.log('PostDetailView mounted, postId:', postId)
   await fetchPostDetail()
   await fetchComments() 
 })
@@ -25,15 +27,14 @@ onMounted(async () => {
 const fetchPostDetail = async () => {
   try {
     loading.value = true
-    const response = await apiClient.get(`/forum/posts/${postId}`)
+    console.log('开始获取帖子详情，ID:', postId)
     
+    const response = await apiClient.get(`/forum/posts/${postId}`)
     console.log('帖子详情响应:', response.data)
     
     // 正确处理嵌套的数据结构
     if (response.data && response.data.code === 1) {
       post.value = response.data.data
-      
-      // 删除额外的点赞状态请求，直接使用帖子返回的isLiked值
       
       // 处理可能为null的字段
       if (!post.value.authorName) {
@@ -44,19 +45,20 @@ const fetchPostDetail = async () => {
         post.value.categoryName = '未分类'
       }
       
+      console.log('帖子详情加载成功:', post.value)
     } else {
+      console.error('获取帖子详情失败:', response.data)
       ElMessage.error(response.data?.msg || '获取帖子详情失败')
       router.push('/forum') // 获取失败时返回论坛首页
     }
   } catch (error) {
+    console.error('获取帖子详情异常:', error)
     ElMessage.error('获取帖子详情失败')
-    console.error(error)
     router.push('/forum') // 异常时返回论坛首页
   } finally {
     loading.value = false
   }
 }
-
 
 const submitComment = async () => {
   if (!commentForm.value.content || !commentForm.value.content.trim()) {
@@ -76,14 +78,13 @@ const submitComment = async () => {
       formData,
       {
         headers: {
-          'Content-Type': 'multipart/form-data', // 显式设置为表单格式
+          'Content-Type': 'multipart/form-data',
         }
       }
     )
     
     // 处理响应
     if (response.data && response.data.code === 1) {
-      // 显示成功消息
       ElMessage({
         message: '评论发表成功！',
         type: 'success',
@@ -99,7 +100,6 @@ const submitComment = async () => {
       // 滚动到评论区
       scrollToComments()
     } else {
-      // 显示失败消息
       ElMessage.error(response.data?.msg || '评论发表失败')
     }
   } catch (error) {
@@ -227,12 +227,12 @@ const toggleLike = async () => {
         </el-form>
         
         <h3>全部评论 ({{ comments.length }})</h3>
-          <div v-loading="commentsLoading" class="comments-list">
-            <div v-if="comments.length === 0 && !commentsLoading" class="empty-comments">
-              暂无评论，快来发表第一条评论吧！
-            </div>
-            
-            <el-card v-for="comment in comments" :key="comment.id" class="comment-card">
+        <div v-loading="commentsLoading" class="comments-list">
+          <div v-if="comments.length === 0 && !commentsLoading" class="empty-comments">
+            暂无评论，快来发表第一条评论吧！
+          </div>
+          
+          <el-card v-for="comment in comments" :key="comment.id" class="comment-card">
             <div class="comment-header">
               <span class="comment-author">{{ comment.authorName }}</span>
               <span class="comment-date">{{ formatDate(comment.createTime) }}</span>
@@ -243,6 +243,18 @@ const toggleLike = async () => {
           </el-card>
         </div>
       </div>
+      
+      <!-- 如果帖子不存在，显示错误页面 -->
+      <el-card v-if="!post && !loading" class="error-card">
+        <div class="error-content">
+          <el-icon class="error-icon"><DocumentDelete /></el-icon>
+          <h2>帖子不存在</h2>
+          <p>您访问的帖子不存在或已被删除</p>
+          <el-button type="primary" @click="router.push('/forum')">
+            返回论坛
+          </el-button>
+        </div>
+      </el-card>
     </div>
   </div>
 </template>
@@ -381,5 +393,31 @@ const toggleLike = async () => {
 
 .like-button.el-button--primary:hover {
   background: linear-gradient(45deg, #ff8a8e 0%, #f9c0b4 99%, #f9c0b4 100%);
+}
+
+/* 错误页面样式 */
+.error-card {
+  background: var(--card-bg) !important;
+  text-align: center;
+}
+
+.error-content {
+  padding: 40px 20px;
+}
+
+.error-icon {
+  font-size: 64px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.error-content h2 {
+  color: var(--text-color);
+  margin-bottom: 16px;
+}
+
+.error-content p {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
 }
 </style>

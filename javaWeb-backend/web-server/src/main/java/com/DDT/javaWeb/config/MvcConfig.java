@@ -37,6 +37,7 @@ public class MvcConfig implements WebMvcConfigurer {
                         // 精确定义公共接口
                         "/forum/categories",
                         "/forum/posts",
+                        "/forum/categories/*/posts",
                         "/leaderboard",
                         // 认证相关接口
                         "/user/register",
